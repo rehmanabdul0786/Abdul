@@ -1,0 +1,32 @@
+node{
+    
+    stage("Git Clone"){
+        git credentialsId: 'GIT_CREDENTIALS', url: 'https://github.com/rehmanabdul0786/Abdul.git'
+    }
+ 
+  stage('Build') {
+				sh 'mvn install -Dmaven.test.skip=true'
+			}
+		
+		stage('Unit Tests') {
+				sh 'mvn compiler:testCompile'
+				sh 'mvn surefire:test'
+				junit 'target/**/*.xml'
+			}
+			
+			stage("Build Docker Image"){
+			    sh "docker build -t fifa000/gamutkart-img ." 
+			}
+			
+			stage("Docker push"){
+			 withCredentials([string(credentialsId: 'DOCKER_HUB_CREDENTIALS', variable: 'DOCKER_HUB_CREDENTIALS')]) {
+               sh "docker login -u fifa000 -p ${DOCKER_HUB_CREDENTIALS}"
+            }
+			    sh "docker push fifa000/gamutkart-img "
+		   }
+		   
+		    stage("Deploy To Kuberates Cluster"){
+                sh "kubectl apply -f Deployement.yml"
+        }
+			
+} 
